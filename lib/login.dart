@@ -36,7 +36,7 @@ class LoginPage extends StatelessWidget {
               const TextField(
                 decoration: InputDecoration(
                   labelStyle: TextStyle(color: Colors.white),
-                  labelText: 'Password',
+                  labelText: 'password',
                 ),
                 obscureText: true,
               ),
