@@ -304,10 +304,13 @@ class RegistrationPageState extends State<RegistrationPage> {
                         _passwordController.text,
                       );
                       try {
-                        await dbHelper.saveData(userModel);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Registering...')),
-                        );
+                          await dbHelper.saveData(userModel);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Successfully registered account'),
+                            backgroundColor: Colors.green, // Set background color to green
+                         ),
+                     );
                         Navigator.pop(context);
                       } catch (error) {
                         ScaffoldMessenger.of(context).showSnackBar(
