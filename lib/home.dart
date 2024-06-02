@@ -1,26 +1,12 @@
 import 'package:flutter/material.dart';
 
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: LoginSuccessScreen(),
-    );
-  }
-}
-
 class LoginSuccessScreen extends StatelessWidget {
-  const LoginSuccessScreen({super.key});
+  final String name;
+
+  const LoginSuccessScreen({super.key, required this.name});
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Login Success'),
@@ -32,10 +18,10 @@ class LoginSuccessScreen extends StatelessWidget {
         ),
       ),
       backgroundColor: Colors.white,
-      body: const Center(
+      body: Center(
         child: Text(
-          'Login Successful',
-          style: TextStyle(
+          'Welcome $name',
+          style: const TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
             color: Colors.green,

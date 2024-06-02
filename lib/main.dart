@@ -1,13 +1,12 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
-//import 'package:path/path.dart';
-//import 'package:sqflite/sqflite.dart';
 import 'package:vote/user.dart';
 import 'package:vote/dbHelper.dart';
 import 'package:vote/home.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
-void main() => runApp(const SecureVoteApp());  //main runs secureVoteApp
+void main() => runApp(const SecureVoteApp());
 
 class SecureVoteApp extends StatelessWidget {
   const SecureVoteApp({super.key});
@@ -19,7 +18,7 @@ class SecureVoteApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const LoginPage(),  //secureVoteApp runs
+      home: const LoginPage(),
     );
   }
 }
@@ -28,19 +27,25 @@ class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
   @override
-  LoginPageState createState() => LoginPageState();  //create LoginPageState
+  LoginPageState createState() => LoginPageState();
 }
 
 class LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  Future<SharedPreferences> _pref = SharedPreferences.getInstance();
+  late Future<SharedPreferences> _pref;
+  late DbHelper dbHelper;
+
+  @override
+  void initState() {
+    super.initState();
+    _pref = SharedPreferences.getInstance();
+    dbHelper = DbHelper();
+  }
 
   @override
   Widget build(BuildContext context) {
-    var dbHelper = DbHelper();
-    
     return Scaffold(
       backgroundColor: Colors.white,
       body: Center(
@@ -74,7 +79,7 @@ class LoginPageState extends State<LoginPage> {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your email';
                     }
-                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {   //Email requirements __@__.__
+                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
                       return 'Please enter a valid email';
                     }
                     return null;
@@ -110,7 +115,7 @@ class LoginPageState extends State<LoginPage> {
                           setSP(userData).whenComplete(() {
                             Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (_) => const LoginSuccessScreen()), //Login success
+                                MaterialPageRoute(builder: (_) => LoginSuccessScreen(name: userData.userName)), // Pass userName
                             );
                           });
                         } else {
@@ -125,34 +130,28 @@ class LoginPageState extends State<LoginPage> {
                       );
                     }
                   },
+
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 50.0, vertical: 15.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 50.0, vertical: 15.0),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8.0),
                     ),
                   ),
                   child: const Text(
                     'Login',
-                    style: TextStyle(
-                      fontSize: 18,
-                    ),
+                    style: TextStyle(fontSize: 18),
                   ),
                 ),
                 const SizedBox(height: 16),
                 TextButton(
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const RegistrationPage()),  //Navigate to registration page
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => const RegistrationPage()),
                     );
                   },
                   child: const Text(
                     'Don\'t have an account? Register',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.blue,
-                    ),
+                    style: TextStyle(fontSize: 16, color: Colors.blue),
                   ),
                 ),
               ],
@@ -162,9 +161,9 @@ class LoginPageState extends State<LoginPage> {
       ),
     );
   }
-  Future setSP(UserModel user) async {
-    final SharedPreferences sp = await _pref;
 
+  Future<void> setSP(UserModel user) async {
+    final SharedPreferences sp = await _pref;
     sp.setString("user_name", user.userName);
     sp.setString("email", user.userEmail);
     sp.setString("password", user.userPassword);
@@ -184,8 +183,14 @@ class RegistrationPageState extends State<RegistrationPage> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
-  DbHelper dbHelper = DbHelper();
-  
+  late DbHelper dbHelper;
+
+  @override
+  void initState() {
+    super.initState();
+    dbHelper = DbHelper();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -263,7 +268,7 @@ class RegistrationPageState extends State<RegistrationPage> {
                       return 'Please enter a password';
                     }
                     if (value.length < 6) {
-                      return 'Password must be at least 6 characters'; //password requirements
+                      return 'Password must be at least 6 characters';
                     }
                     return null;
                   },
@@ -292,52 +297,44 @@ class RegistrationPageState extends State<RegistrationPage> {
                 const SizedBox(height: 32),
                 ElevatedButton(
                   onPressed: () async {
-                    print('y');
                     if (_formKey.currentState?.validate() == true) {
-                      // Perform registration action
-                      print('x');
-                      UserModel uModel = UserModel(
+                      UserModel userModel = UserModel(
                         _nameController.text,
                         _emailController.text,
-                        _passwordController.text
+                        _passwordController.text,
                       );
-                    await dbHelper.saveData(uModel).then((userData){
-                      Navigator.pop(context);
-                    }).catchError((error) {
-                      print(error);
-                    });
-                      
-                    ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Registering...')),
-                      );
+                      try {
+                        await dbHelper.saveData(userModel);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Registering...')),
+                        );
+                        Navigator.pop(context);
+                      } catch (error) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Error: $error')),
+                        );
+                      }
                     }
                   },
-        
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 50.0, vertical: 15.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 50.0, vertical: 15.0),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8.0),
                     ),
                   ),
                   child: const Text(
                     'Register',
-                    style: TextStyle(
-                      fontSize: 18,
-                    ),
+                    style: TextStyle(fontSize: 18),
                   ),
                 ),
                 const SizedBox(height: 16),
                 TextButton(
                   onPressed: () {
-                    Navigator.pop(context);  // Navigate back to the login page
+                    Navigator.pop(context);
                   },
                   child: const Text(
                     'Already have an account? Login',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.blue,
-                    ),
+                    style: TextStyle(fontSize: 16, color: Colors.blue),
                   ),
                 ),
               ],
