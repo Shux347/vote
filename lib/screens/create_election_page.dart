@@ -1,116 +1,87 @@
 import 'package:flutter/material.dart';
-import '../helpers/db_helper.dart';
-
+import '../helpers/database.dart';
 class CreateElectionPage extends StatefulWidget {
-  const CreateElectionPage({super.key});
-
   @override
-  CreateElectionPageState createState() => CreateElectionPageState();
+  _CreateElectionPageState createState() => _CreateElectionPageState();
 }
 
-class CreateElectionPageState extends State<CreateElectionPage> {
+class _CreateElectionPageState extends State<CreateElectionPage> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _electionNameController = TextEditingController();
-  final List<TextEditingController> _candidateControllers = [];
-  late DbHelper dbHelper;
+  final _electionNameController = TextEditingController();
+  final _assignedUsersController = TextEditingController();
 
-  @override
-  void initState() {
-    super.initState();
-    dbHelper = DbHelper();
-  }
+  void _createElection() async {
+    if (_formKey.currentState!.validate()) {
+      var db = Database();
+      var conn = await db.getConnection();
 
-  @override
-  void dispose() {
-    _electionNameController.dispose();
-    for (var controller in _candidateControllers) {
-      controller.dispose();
-    }
-    super.dispose();
-  }
-
-  void _addCandidateField() {
-    setState(() {
-      _candidateControllers.add(TextEditingController());
-    });
-  }
-
-  void _saveElection() async {
-    if (_formKey.currentState?.validate() == true) {
-      String electionId = DateTime.now().millisecondsSinceEpoch.toString();
-      await dbHelper.db.then((db) {
-        db.insert('Election', {'id': electionId, 'name': _electionNameController.text});
-        for (var controller in _candidateControllers) {
-          db.insert('Candidate', {
-            'id': DateTime.now().millisecondsSinceEpoch.toString(),
-            'name': controller.text,
-            'electionId': electionId,
-          });
-        }
-      });
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Election created successfully!'),
-          backgroundColor: Colors.green,
-        ),
+      await conn.query(
+        'INSERT INTO elections (name) VALUES (@a)',
+        substitutionValues: {
+          'a': _electionNameController.text,
+        },
       );
 
-      Navigator.pop(context);
+      // Get the election ID
+      var result = await conn.query(
+        'SELECT id FROM elections WHERE name = @a',
+        substitutionValues: {
+          'a': _electionNameController.text,
+        },
+      );
+      var electionId = result.first[0];
+
+      // Assign users to the election
+      var emails = _assignedUsersController.text.split(',');
+      for (var email in emails) {
+        await conn.query(
+          'INSERT INTO election_users (election_id, user_email) VALUES (@a, @b)',
+          substitutionValues: {
+            'a': electionId,
+            'b': email.trim(),
+          },
+        );
+      }
+
+      // Navigate to the admin dashboard or election results
+      Navigator.pushNamed(context, '/admin_dashboard');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Election')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
+      appBar: AppBar(title: Text('Create Election')),
+      body: Form(
+        key: _formKey,
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
           child: Column(
-            children: [
+            children: <Widget>[
               TextFormField(
                 controller: _electionNameController,
                 decoration: InputDecoration(labelText: 'Election Name'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter election name';
+                    return 'Please enter an election name';
                   }
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: _candidateControllers.length,
-                  itemBuilder: (context, index) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: TextFormField(
-                        controller: _candidateControllers[index],
-                        decoration: InputDecoration(labelText: 'Candidate ${index + 1}'),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter candidate name';
-                          }
-                          return null;
-                        },
-                      ),
-                    );
-                  },
-                ),
+              TextFormField(
+                controller: _assignedUsersController,
+                decoration: InputDecoration(labelText: 'Assign Users (comma-separated emails)'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter emails of users to assign';
+                  }
+                  return null;
+                },
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 20),
               ElevatedButton(
-                onPressed: _addCandidateField,
-                child: const Text('Add Candidate'),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _saveElection,
-                child: const Text('Create Election'),
+                onPressed: _createElection,
+                child: Text('Create Election'),
               ),
             ],
           ),

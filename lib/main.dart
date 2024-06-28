@@ -1,30 +1,28 @@
 import 'package:flutter/material.dart';
-import 'screens/create_election_page.dart';
-import 'screens/login.dart';
+import 'helpers/database.dart';
 import 'screens/registration_page.dart';
+import 'screens/login.dart';
+import 'screens/create_election_page.dart';
 import 'screens/voting_page.dart';
-import 'screens/login_success_screen.dart';  
 
-void main() => runApp(const SecureVoteApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  var db = Database();
+  await db.getConnection();
+  runApp(MyApp());
+}
 
-class SecureVoteApp extends StatelessWidget {
-  const SecureVoteApp({super.key});
-
+class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Secure Vote',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
-      home: const LoginPage(),
+      title: 'Voting App',
+      initialRoute: '/',
       routes: {
-        '/login': (context) => const LoginPage(),
-        '/register': (context) => const RegistrationPage(),
-        '/createElection': (context) => const CreateElectionPage(),
-        '/voting': (context) => const VotingPage(),
-        '/home': (context) => const LoginSuccessScreen(name: ''), 
+        '/': (context) => RegistrationPage(),
+        '/login': (context) => LoginPage(),
+        '/create_election': (context) => CreateElectionPage(),
+        '/select_election': (context) => VotingPage(),
       },
     );
   }

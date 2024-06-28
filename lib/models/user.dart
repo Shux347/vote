@@ -1,17 +1,15 @@
-class UserModel {
-  final String userName;
-  final String userEmail;
-  final String userPassword;
-  String faceImagePath;
+class User {
+  final String id;
+  final String email;
+  final String password;
+  final String role;
+  final List<int> faceData;
 
-  UserModel(this.userName, this.userEmail, this.userPassword, {required this.faceImagePath});
-
-  Map<String, dynamic> toMap() {
-    return {
-      'userName': userName,
-      'userEmail': userEmail,
-      'userPassword': userPassword,
-      'faceImagePath': faceImagePath,
-    };
-  }
+  User({
+    required this.id,
+    required this.email,
+    required this.password,
+    required this.role,
+    required this.faceData,
+  });
 }
