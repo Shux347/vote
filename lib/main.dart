@@ -6,6 +6,7 @@ import 'screens/create_election_page.dart';
 import 'screens/voting_page.dart';
 
 
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   var db = Database();
