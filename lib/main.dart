@@ -4,6 +4,7 @@ import 'screens/registration_page.dart';
 import 'screens/login.dart';
 import 'screens/create_election_page.dart';
 import 'screens/voting_page.dart';
+// Trigger new build
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
