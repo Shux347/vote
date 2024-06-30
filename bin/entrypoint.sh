@@ -7,7 +7,7 @@ export PATH=$PATH:/app/dart-sdk/bin
 export PUBSPEC_PATH=${PUBSPEC_PATH:-/app/pubspec.yaml}
 
 # Run pub get using the specified pubspec.yaml
-pub get --directory=${PUBSPEC_PATH%/*}
+dart pub get --directory=${PUBSPEC_PATH%/*}
 
 # Run your Dart application
 dart main.dart
