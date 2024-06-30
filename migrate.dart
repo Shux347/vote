@@ -1,7 +1,8 @@
 import 'package:postgres/postgres.dart';
+import 'dart:io';
 
 void main() async {
-  final uri = Uri.parse('YOUR_HEROKU_DATABASE_URL');
+  final uri = Uri.parse(Platform.environment['DATABASE_URL']!);
   var connection = PostgreSQLConnection(
     uri.host,
     uri.port,
