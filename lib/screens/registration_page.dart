@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../helpers/database.dart';
+import 'login.dart';
 
 class RegistrationPage extends StatefulWidget {
   @override
@@ -8,33 +9,34 @@ class RegistrationPage extends StatefulWidget {
 
 class _RegistrationPageState extends State<RegistrationPage> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  String _role = 'user'; // default role
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
 
-  void _register() async {
+  Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
-      // Capture facial data (dummy data used here for illustration)
-      List<int> faceData = [1, 2, 3, 4, 5];
+      final username = _usernameController.text;
+      final email = _emailController.text;
+      final password = _passwordController.text;
 
-      // Save user data to the database
-      var db = Database();
-      var conn = await db.getConnection();
-      await conn.query(
-        'INSERT INTO users (email, password, role, face_data) VALUES (@a, @b, @c, @d)',
-        substitutionValues: {
-          'a': _emailController.text,
-          'b': _passwordController.text,
-          'c': _role,
-          'd': faceData,
-        },
-      );
-
-      // Navigate to the appropriate page after registration
-      if (_role == 'admin') {
-        Navigator.pushNamed(context, '/create_election');
-      } else {
-        Navigator.pushNamed(context, '/login');
+      try {
+        final connection = await Database().getConnection();
+        await connection.query(
+          'INSERT INTO users (email, username, password) VALUES (@email, @username, @password)',
+          substitutionValues: {
+            'email': email,
+            'username': username,
+            'password': password,
+          },
+        );
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => LoginPage()),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error registering user: $e')),
+        );
       }
     }
   }
@@ -42,19 +44,31 @@ class _RegistrationPageState extends State<RegistrationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Registration')),
-      body: Form(
-        key: _formKey,
-        child: Padding(
-          padding: EdgeInsets.all(16.0),
+      appBar: AppBar(
+        title: Text('Register'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
           child: Column(
             children: <Widget>[
+              TextFormField(
+                controller: _usernameController,
+                decoration: InputDecoration(labelText: 'Username'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your username';
+                  }
+                  return null;
+                },
+              ),
               TextFormField(
                 controller: _emailController,
                 decoration: InputDecoration(labelText: 'Email'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter an email';
+                    return 'Please enter your email';
                   }
                   return null;
                 },
@@ -62,31 +76,28 @@ class _RegistrationPageState extends State<RegistrationPage> {
               TextFormField(
                 controller: _passwordController,
                 decoration: InputDecoration(labelText: 'Password'),
+                obscureText: true,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter a password';
+                    return 'Please enter your password';
                   }
                   return null;
                 },
-                obscureText: true,
-              ),
-              DropdownButtonFormField<String>(
-                value: _role,
-                items: [
-                  DropdownMenuItem(value: 'user', child: Text('User')),
-                  DropdownMenuItem(value: 'admin', child: Text('Admin')),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _role = value!;
-                  });
-                },
-                decoration: InputDecoration(labelText: 'Role'),
               ),
               SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _register,
                 child: Text('Register'),
+              ),
+              SizedBox(height: 10),
+              TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => LoginPage()),
+                  );
+                },
+                child: Text('Already have an account? Login'),
               ),
             ],
           ),

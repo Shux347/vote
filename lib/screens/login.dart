@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../helpers/database.dart';
+import 'dashboard_page.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -8,31 +9,43 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
 
-  void _login() async {
+  Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
-      var db = Database();
-      var conn = await db.getConnection();
-      var results = await conn.query(
-        'SELECT * FROM users WHERE email = @a AND password = @b',
-        substitutionValues: {
-          'a': _emailController.text,
-          'b': _passwordController.text,
-        },
-      );
+      final email = _emailController.text;
+      final password = _passwordController.text;
 
-      if (results.isNotEmpty) {
-        var user = results.first;
-        if (user[3] == 'admin') {
-          Navigator.pushNamed(context, '/create_election');
+      try {
+        print('Attempting to get database connection...');
+        final connection = await Database().getConnection();
+        print('Database connection obtained.');
+
+        final result = await connection.query(
+          'SELECT * FROM users WHERE email = @email AND password = @password',
+          substitutionValues: {
+            'email': email,
+            'password': password,
+          },
+        );
+
+        if (result.isNotEmpty) {
+          final user = result.first.toColumnMap();
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => DashboardPage(name: user['username'] ?? '', email: email)),
+          );
         } else {
-          Navigator.pushNamed(context, '/select_election');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Invalid email or password')),
+          );
         }
-      } else {
-        // Show error message
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Invalid credentials')));
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error logging in: $e')),
+        );
+        print('Error details: $e'); // Detailed error logging
       }
     }
   }
@@ -40,11 +53,13 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Login')),
-      body: Form(
-        key: _formKey,
-        child: Padding(
-          padding: EdgeInsets.all(16.0),
+      appBar: AppBar(
+        title: Text('Login'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
           child: Column(
             children: <Widget>[
               TextFormField(
@@ -52,7 +67,7 @@ class _LoginPageState extends State<LoginPage> {
                 decoration: InputDecoration(labelText: 'Email'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter an email';
+                    return 'Please enter your email';
                   }
                   return null;
                 },
@@ -60,18 +75,25 @@ class _LoginPageState extends State<LoginPage> {
               TextFormField(
                 controller: _passwordController,
                 decoration: InputDecoration(labelText: 'Password'),
+                obscureText: true,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter a password';
+                    return 'Please enter your password';
                   }
                   return null;
                 },
-                obscureText: true,
               ),
               SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _login,
                 child: Text('Login'),
+              ),
+              SizedBox(height: 10),
+              TextButton(
+                onPressed: () {
+                  Navigator.pushNamed(context, '/register');
+                },
+                child: Text('Don\'t have an account? Register'),
               ),
             ],
           ),

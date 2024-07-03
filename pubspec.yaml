@@ -17,6 +17,7 @@ dependencies:
   path: ^1.8.0
   cupertino_icons: ^1.0.6
   postgres: ^2.4.1
+  flutter_dotenv: ^5.0.2
 
 dev_dependencies:
   flutter_test:
@@ -25,3 +26,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/.env

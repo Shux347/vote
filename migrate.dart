@@ -1,56 +1,46 @@
 import 'package:postgres/postgres.dart';
-import 'dart:io';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // Import dotenv package for environment variables
 
-void main() async {
-  final uri = Uri.parse(Platform.environment['DATABASE_URL']!);
-  var connection = PostgreSQLConnection(
+Future<void> main() async {
+  // Load environment variables from the .env file in the assets directory
+  await dotenv.load(fileName: 'assets/.env');
+
+  // Retrieve the DATABASE_URL environment variable
+  final databaseUrl = dotenv.env['DATABASE_URL'];
+  if (databaseUrl == null) {
+    throw Exception('DATABASE_URL environment variable not set');
+  }
+
+  // Parse the DATABASE_URL
+  final uri = Uri.parse(databaseUrl);
+  final connection = PostgreSQLConnection(
     uri.host,
     uri.port,
-    uri.pathSegments[1],
+    uri.pathSegments[0],
     username: uri.userInfo.split(':')[0],
     password: uri.userInfo.split(':')[1],
     useSSL: true,
   );
 
+  // Open the connection
   await connection.open();
 
-  // Create users table
-  await connection.query('''
-    CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      email VARCHAR(255) UNIQUE NOT NULL,
-      password VARCHAR(255) NOT NULL,
-      role VARCHAR(50) NOT NULL,
-      face_data BYTEA
-    );
-  ''');
+  // SQL command to create the users table
+  const createUsersTable = '''
+  CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    password VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+  ''';
 
-  // Create elections table
-  await connection.query('''
-    CREATE TABLE IF NOT EXISTS elections (
-      id SERIAL PRIMARY KEY,
-      name VARCHAR(255) NOT NULL
-    );
-  ''');
+  // Execute the SQL command
+  await connection.execute(createUsersTable);
 
-  // Create election_users table
-  await connection.query('''
-    CREATE TABLE IF NOT EXISTS election_users (
-      election_id INTEGER REFERENCES elections(id),
-      user_email VARCHAR(255) REFERENCES users(email),
-      PRIMARY KEY (election_id, user_email)
-    );
-  ''');
-
-  // Create votes table
-  await connection.query('''
-    CREATE TABLE IF NOT EXISTS votes (
-      id SERIAL PRIMARY KEY,
-      election_id INTEGER REFERENCES elections(id),
-      user_id INTEGER REFERENCES users(id)
-    );
-  ''');
-
+  // Close the connection
   await connection.close();
-  print('Migration completed.');
+
+  print('Migration completed successfully.');
 }

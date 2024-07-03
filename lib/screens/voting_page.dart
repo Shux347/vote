@@ -1,92 +1,120 @@
 import 'package:flutter/material.dart';
 import '../helpers/database.dart';
+
 class VotingPage extends StatefulWidget {
+  final int electionId;
+  final String userEmail;  // Add userEmail parameter
+
+  VotingPage({required this.electionId, required this.userEmail});
+
   @override
   _VotingPageState createState() => _VotingPageState();
 }
 
 class _VotingPageState extends State<VotingPage> {
-  final _formKey = GlobalKey<FormState>();
-  final _electionIdController = TextEditingController();
+  List<Map<String, dynamic>> _candidates = [];
+  int? _selectedCandidateId;
 
-  // Retrieve face data for user
-  Future<List<int>?> getFaceData(String userId) async {
-    var db = Database();
-    var conn = await db.getConnection();
+  @override
+  void initState() {
+    super.initState();
+    _loadCandidates();
+  }
 
-    var result = await conn.query(
-      'SELECT face_data FROM users WHERE id = @id',
-      substitutionValues: {
-        'id': userId,
-      },
-    );
+  Future<void> _loadCandidates() async {
+    try {
+      final connection = await Database().getConnection();
+      final results = await connection.query(
+        'SELECT id, name FROM candidates WHERE election_id = @election_id',
+        substitutionValues: {'election_id': widget.electionId},
+      );
 
-    if (result.isNotEmpty) {
-      return result.first[0] as List<int>;
+      setState(() {
+        _candidates = results.map((row) => row.toColumnMap()).toList();
+      });
+
+      if (_candidates.isEmpty) {
+        print('No candidates found for this election.');
+      } else {
+        print('Candidates: ${_candidates}');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading candidates: $e')),
+      );
+      print('Error loading candidates: $e');
     }
-    return null;
   }
 
-  bool compareFaces(List<int> storedFaceData, List<int> inputFaceData) {
-    // Implement face comparison logic
-    // This is a dummy implementation, replace with actual comparison logic
-    return storedFaceData.length == inputFaceData.length && storedFaceData.every((element) => inputFaceData.contains(element));
-  }
+  Future<void> _submitVote() async {
+    if (_selectedCandidateId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please select a candidate')),
+      );
+      return;
+    }
 
-  void _vote(String userId, String electionId, List<int> inputFaceData) async {
-    var storedFaceData = await getFaceData(userId);
+    try {
+      final connection = await Database().getConnection();
 
-    if (storedFaceData != null && compareFaces(storedFaceData, inputFaceData)) {
-      var db = Database();
-      var conn = await db.getConnection();
-      await conn.query(
-        'INSERT INTO votes (election_id, user_id) VALUES (@a, @b)',
+      await connection.query(
+        'INSERT INTO votes (election_id, candidate_id, user_email) VALUES (@election_id, @candidate_id, @user_email)',
         substitutionValues: {
-          'a': electionId,
-          'b': userId,
+          'election_id': widget.electionId,
+          'candidate_id': _selectedCandidateId,
+          'user_email': widget.userEmail,  // Use userEmail from widget
         },
       );
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Vote cast successfully')));
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Face verification failed')));
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Vote submitted successfully')),
+      );
+
+      // Navigate back to the dashboard after voting
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error submitting vote: $e')),
+      );
+      print('Error submitting vote: $e');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Assume userId is passed to this page
-    final String userId = ModalRoute.of(context)!.settings.arguments as String;
     return Scaffold(
-      appBar: AppBar(title: Text('Vote')),
-      body: Form(
-        key: _formKey,
-        child: Padding(
-          padding: EdgeInsets.all(16.0),
-          child: Column(
-            children: <Widget>[
-              TextFormField(
-                controller: _electionIdController,
-                decoration: InputDecoration(labelText: 'Election ID'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter the election ID';
-                  }
-                  return null;
+      appBar: AppBar(
+        title: Text('Vote in Election'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text('Select a candidate:', style: TextStyle(fontSize: 18)),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _candidates.length,
+                itemBuilder: (context, index) {
+                  final candidate = _candidates[index];
+                  return RadioListTile<int>(
+                    title: Text(candidate['name']),
+                    value: candidate['id'],
+                    groupValue: _selectedCandidateId,
+                    onChanged: (int? value) {
+                      setState(() {
+                        _selectedCandidateId = value;
+                      });
+                    },
+                  );
                 },
               ),
-              // Assume face data is captured and stored in inputFaceData
-              // This should be replaced with actual face capture logic
-              ElevatedButton(
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    List<int> inputFaceData = [1, 2, 3, 4, 5]; // Dummy data for illustration
-                    _vote(userId, _electionIdController.text, inputFaceData);
-                  }
-                },
-                child: Text('Vote'),
-              ),
-            ],
-          ),
+            ),
+            ElevatedButton(
+              onPressed: _submitVote,
+              child: Text('Submit Vote'),
+            ),
+          ],
         ),
       ),
     );
