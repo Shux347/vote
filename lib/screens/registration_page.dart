@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../helpers/database.dart';
 import 'login.dart';
+import '../services/camera_service.dart';
+import '../services/facial_recognition_service.dart';
+import '../services/image_storage_service.dart';
 
 class RegistrationPage extends StatefulWidget {
   @override
@@ -12,6 +15,21 @@ class _RegistrationPageState extends State<RegistrationPage> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final CameraService _cameraService = CameraService();
+  final FacialRecognitionService _facialRecognitionService = FacialRecognitionService();
+  final ImageStorageService _imageStorageService = ImageStorageService();
+
+  @override
+  void initState() {
+    super.initState();
+    _cameraService.initialize();
+  }
+
+  @override
+  void dispose() {
+    _cameraService.dispose();
+    super.dispose();
+  }
 
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
@@ -20,19 +38,31 @@ class _RegistrationPageState extends State<RegistrationPage> {
       final password = _passwordController.text;
 
       try {
-        final connection = await Database().getConnection();
-        await connection.query(
-          'INSERT INTO users (email, username, password) VALUES (@email, @username, @password)',
-          substitutionValues: {
-            'email': email,
-            'username': username,
-            'password': password,
-          },
-        );
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => LoginPage()),
-        );
+        final imagePath = await _cameraService.takePicture();
+        final faceId = await _facialRecognitionService.detectFaces(imagePath);
+
+        if (faceId != null) {
+          await _imageStorageService.saveImage(1, imagePath); // Save with user ID
+
+          final connection = await Database().getConnection();
+          await connection.query(
+            'INSERT INTO users (email, username, password) VALUES (@email, @username, @password)',
+            substitutionValues: {
+              'email': email,
+              'username': username,
+              'password': password,
+            },
+          );
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => LoginPage()),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('No face detected, please try again.')),
+          );
+        }
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error registering user: $e')),
