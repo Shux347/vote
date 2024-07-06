@@ -1,1 +1,1 @@
-web: heroku-buildpack-dart/bin/entrypoint.sh
+web: bin/entrypoint.sh
