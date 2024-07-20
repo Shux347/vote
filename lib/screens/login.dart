@@ -1,3 +1,5 @@
+// ignore_for_file: use_key_in_widget_constructors, library_private_types_in_public_api, use_build_context_synchronously, prefer_const_constructors
+
 import 'package:flutter/material.dart';
 import '../helpers/database.dart';
 import 'dashboard_page.dart';

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:local_auth/local_auth.dart';
 import '../helpers/database.dart';
 
 class VotingPage extends StatefulWidget {
   final int electionId;
-  final String userEmail;  // Add userEmail parameter
+  final String userEmail;
 
   VotingPage({required this.electionId, required this.userEmail});
 
@@ -12,6 +13,7 @@ class VotingPage extends StatefulWidget {
 }
 
 class _VotingPageState extends State<VotingPage> {
+  final LocalAuthentication auth = LocalAuthentication();
   List<Map<String, dynamic>> _candidates = [];
   int? _selectedCandidateId;
 
@@ -54,6 +56,26 @@ class _VotingPageState extends State<VotingPage> {
       return;
     }
 
+    bool authenticated = false;
+    try {
+      authenticated = await auth.authenticate(
+        localizedReason: 'Please authenticate to vote',
+        options: const AuthenticationOptions(
+          useErrorDialogs: true,
+          stickyAuth: true,
+        ),
+      );
+    } on Exception catch (e) {
+      print(e);
+    }
+
+    if (!authenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Fingerprint authentication failed')),
+      );
+      return;
+    }
+
     try {
       final connection = await Database().getConnection();
 
@@ -62,7 +84,7 @@ class _VotingPageState extends State<VotingPage> {
         substitutionValues: {
           'election_id': widget.electionId,
           'candidate_id': _selectedCandidateId,
-          'user_email': widget.userEmail,  // Use userEmail from widget
+          'user_email': widget.userEmail,
         },
       );
 
@@ -91,10 +113,10 @@ class _VotingPageState extends State<VotingPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text('Select a candidate:', style: TextStyle(fontSize: 18)),
-            Expanded(
-              child: ListView.builder(
-                itemCount: _candidates.length,
+                    Text('Select a candidate:', style: TextStyle(fontSize: 18)),
+        Expanded(
+          child: ListView.builder(
+                            itemCount: _candidates.length,
                 itemBuilder: (context, index) {
                   final candidate = _candidates[index];
                   return RadioListTile<int>(

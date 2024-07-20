@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:local_auth/local_auth.dart';
 import '../helpers/database.dart';
 import 'login.dart';
 
@@ -12,12 +13,33 @@ class _RegistrationPageState extends State<RegistrationPage> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final LocalAuthentication auth = LocalAuthentication();
 
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
       final username = _usernameController.text;
       final email = _emailController.text;
       final password = _passwordController.text;
+
+      bool authenticated = false;
+      try {
+        authenticated = await auth.authenticate(
+          localizedReason: 'Please authenticate to register',
+          options: const AuthenticationOptions(
+            useErrorDialogs: true,
+            stickyAuth: true,
+          ),
+        );
+      } on Exception catch (e) {
+        print(e);
+      }
+
+      if (!authenticated) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fingerprint authentication failed')),
+        );
+        return;
+      }
 
       try {
         final connection = await Database().getConnection();
