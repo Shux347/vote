@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:local_auth/local_auth.dart';
 import '../helpers/database.dart';
+import 'package:local_auth/local_auth.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class VotingPage extends StatefulWidget {
   final int electionId;
@@ -14,6 +15,7 @@ class VotingPage extends StatefulWidget {
 
 class _VotingPageState extends State<VotingPage> {
   final LocalAuthentication auth = LocalAuthentication();
+  final FlutterSecureStorage secureStorage = FlutterSecureStorage();
   List<Map<String, dynamic>> _candidates = [];
   int? _selectedCandidateId;
 
@@ -52,6 +54,18 @@ class _VotingPageState extends State<VotingPage> {
     if (_selectedCandidateId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Please select a candidate')),
+      );
+      return;
+    }
+
+    bool canCheckBiometrics = await auth.canCheckBiometrics;
+    bool hasEnrolledBiometrics = await auth.getAvailableBiometrics().then(
+      (biometrics) => biometrics.isNotEmpty,
+    );
+
+    if (!canCheckBiometrics || !hasEnrolledBiometrics) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Biometric authentication not available or not enrolled')),
       );
       return;
     }
@@ -113,10 +127,10 @@ class _VotingPageState extends State<VotingPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-                    Text('Select a candidate:', style: TextStyle(fontSize: 18)),
-        Expanded(
-          child: ListView.builder(
-                            itemCount: _candidates.length,
+            Text('Select a candidate:', style: TextStyle(fontSize: 18)),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _candidates.length,
                 itemBuilder: (context, index) {
                   final candidate = _candidates[index];
                   return RadioListTile<int>(

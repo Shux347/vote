@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:local_auth/local_auth.dart';
 import '../helpers/database.dart';
 import 'login.dart';
+import 'package:local_auth/local_auth.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class RegistrationPage extends StatefulWidget {
   @override
@@ -14,12 +15,25 @@ class _RegistrationPageState extends State<RegistrationPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final LocalAuthentication auth = LocalAuthentication();
+  final FlutterSecureStorage secureStorage = FlutterSecureStorage();
 
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
       final username = _usernameController.text;
       final email = _emailController.text;
       final password = _passwordController.text;
+
+      bool canCheckBiometrics = await auth.canCheckBiometrics;
+      bool hasEnrolledBiometrics = await auth.getAvailableBiometrics().then(
+        (biometrics) => biometrics.isNotEmpty,
+      );
+
+      if (!canCheckBiometrics || !hasEnrolledBiometrics) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Biometric authentication not available or not enrolled')),
+        );
+        return;
+      }
 
       bool authenticated = false;
       try {
@@ -51,6 +65,10 @@ class _RegistrationPageState extends State<RegistrationPage> {
             'password': password,
           },
         );
+
+        // Store user identifier securely
+        await secureStorage.write(key: 'userEmail', value: email);
+
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => LoginPage()),
