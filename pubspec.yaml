@@ -19,7 +19,7 @@ dependencies:
   cupertino_icons: ^1.0.6
   postgres: ^2.4.1
   flutter_dotenv: ^5.0.2
-
+  mockito: ^5.0.16
 dev_dependencies:
   flutter_test:
     sdk: flutter

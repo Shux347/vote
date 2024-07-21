@@ -44,10 +44,20 @@ class Database {
   }
 
   Future<PostgreSQLConnection> getConnection() async {
-    if (!_isInitialized) {
-      print('Connection is not initialized, initializing...');
+    if (!_isInitialized || _connection.isClosed) {
+      print('Connection is not initialized or closed, initializing...');
       await _initializeConnection();
     }
     return _connection;
+  }
+
+  Future<bool> isEmailUnique(String email) async {
+    final connection = await getConnection();
+    final List<List<dynamic>> results = await connection.query(
+      'SELECT 1 FROM users WHERE email = @email',
+      substitutionValues: {'email': email},
+    );
+
+    return results.isEmpty;
   }
 }

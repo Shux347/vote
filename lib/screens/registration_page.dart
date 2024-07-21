@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:local_auth/local_auth.dart';
 import '../helpers/database.dart';
+import '../helpers/validator.dart';
 import 'login.dart';
 
 class RegistrationPage extends StatefulWidget {
@@ -13,33 +13,44 @@ class _RegistrationPageState extends State<RegistrationPage> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final LocalAuthentication auth = LocalAuthentication();
+  final Validator validator = Validator(Database());
+  bool _isEmailUnique = true;
+  String? _emailError;
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _checkEmailUnique(String email) async {
+    _isEmailUnique = await validator.isEmailUnique(email);
+    if (!_isEmailUnique) {
+      setState(() {
+        _emailError = 'Email already exists';
+      });
+    } else {
+      setState(() {
+        _emailError = null;
+      });
+    }
+  }
 
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
-      final username = _usernameController.text;
-      final email = _emailController.text;
-      final password = _passwordController.text;
-
-      bool authenticated = false;
-      try {
-        authenticated = await auth.authenticate(
-          localizedReason: 'Please authenticate to register',
-          options: const AuthenticationOptions(
-            useErrorDialogs: true,
-            stickyAuth: true,
-          ),
-        );
-      } on Exception catch (e) {
-        print(e);
-      }
-
-      if (!authenticated) {
+      await _checkEmailUnique(_emailController.text);
+      if (_emailError != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fingerprint authentication failed')),
+          SnackBar(content: Text(_emailError!)),
         );
         return;
       }
+
+      final username = _usernameController.text;
+      final email = _emailController.text;
+      final password = _passwordController.text;
 
       try {
         final connection = await Database().getConnection();
@@ -87,10 +98,15 @@ class _RegistrationPageState extends State<RegistrationPage> {
               ),
               TextFormField(
                 controller: _emailController,
-                decoration: InputDecoration(labelText: 'Email'),
+                decoration: InputDecoration(
+                  labelText: 'Email',
+                  errorText: _emailError,
+                ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter your email';
+                  } else if (!validator.isValidEmailFormat(value)) {
+                    return 'Enter a valid email';
                   }
                   return null;
                 },
@@ -102,6 +118,8 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter your password';
+                  } else if (!validator.isValidPassword(value)) {
+                    return 'Password must be at least 6 characters long';
                   }
                   return null;
                 },

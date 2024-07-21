@@ -24,6 +24,10 @@ class _LoginPageState extends State<LoginPage> {
         final connection = await Database().getConnection();
         print('Database connection obtained.');
 
+        if (connection.isClosed) {
+          throw Exception('Database connection is closed.');
+        }
+
         final result = await connection.query(
           'SELECT * FROM users WHERE email = @email AND password = @password',
           substitutionValues: {
