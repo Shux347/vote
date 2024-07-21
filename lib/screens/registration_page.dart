@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../helpers/database.dart';
 import '../helpers/validator.dart';
+import '../helpers/database_service.dart';
 import 'login.dart';
+import 'package:local_auth/local_auth.dart';
 
 class RegistrationPage extends StatefulWidget {
   @override
@@ -14,6 +16,8 @@ class _RegistrationPageState extends State<RegistrationPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final Validator validator = Validator(Database());
+  final DatabaseService _dbService = DatabaseService(Database());
+  final LocalAuthentication auth = LocalAuthentication();
   bool _isEmailUnique = true;
   String? _emailError;
 
@@ -26,7 +30,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
   }
 
   Future<void> _checkEmailUnique(String email) async {
-    _isEmailUnique = await validator.isEmailUnique(email);
+    _isEmailUnique = await _dbService.isEmailUnique(email);
     if (!_isEmailUnique) {
       setState(() {
         _emailError = 'Email already exists';
@@ -52,17 +56,29 @@ class _RegistrationPageState extends State<RegistrationPage> {
       final email = _emailController.text;
       final password = _passwordController.text;
 
+      bool authenticated = false;
       try {
-        final connection = await Database().getConnection();
-        await connection.query(
-          'INSERT INTO users (email, username, password) VALUES (@email, @username, @password)',
-          substitutionValues: {
-            'email': email,
-            'username': username,
-            'password': password,
-          },
+        authenticated = await auth.authenticate(
+          localizedReason: 'Please authenticate to register',
+          options: const AuthenticationOptions(
+            useErrorDialogs: true,
+            stickyAuth: true,
+          ),
         );
-        Navigator.push(
+      } on Exception catch (e) {
+        print(e);
+      }
+
+      if (!authenticated) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fingerprint authentication failed')),
+        );
+        return;
+      }
+
+      try {
+        await _dbService.createUser(email, username, password);
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => LoginPage()),
         );
@@ -107,6 +123,8 @@ class _RegistrationPageState extends State<RegistrationPage> {
                     return 'Please enter your email';
                   } else if (!validator.isValidEmailFormat(value)) {
                     return 'Enter a valid email';
+                  } else if (_emailError != null) {
+                    return _emailError;
                   }
                   return null;
                 },
