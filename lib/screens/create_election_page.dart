@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_const_constructors
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../helpers/database.dart';
 import 'dashboard_page.dart';
 
@@ -59,6 +60,10 @@ class _CreateElectionPageState extends State<CreateElectionPage> {
   Future<void> _createElection() async {
     if (_formKey.currentState!.validate()) {
       final name = _nameController.text;
+      final creatorName = widget.name;
+      final timestamp = DateFormat('dd-MM-yy HH:mm').format(DateTime.now());
+      final formattedName = '$name, created by $creatorName at $timestamp';
+      
       final candidates = _candidateControllers.map((c) => c.text).toList();
       final voters = _voterControllers.map((c) => c.text).toList();
 
@@ -91,7 +96,7 @@ class _CreateElectionPageState extends State<CreateElectionPage> {
         final electionResult = await connection.query(
           'INSERT INTO elections (name, creator_email) VALUES (@name, @creator_email) RETURNING id',
           substitutionValues: {
-            'name': name,
+            'name': formattedName,
             'creator_email': widget.email,
           },
         );
