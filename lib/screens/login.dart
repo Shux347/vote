@@ -63,12 +63,14 @@ class _LoginPageState extends State<LoginPage> {
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: Text('Login'),
+        centerTitle: true,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               // Add the image widget here
               Image.asset(
@@ -76,9 +78,22 @@ class _LoginPageState extends State<LoginPage> {
                 height: 200,
               ),
               SizedBox(height: 20),
+              Text(
+                'Welcome Back!',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 20),
               TextFormField(
                 controller: _emailController,
-                decoration: InputDecoration(labelText: 'Email'),
+                decoration: InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.email),
+                ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter your email';
@@ -86,9 +101,14 @@ class _LoginPageState extends State<LoginPage> {
                   return null;
                 },
               ),
+              SizedBox(height: 10),
               TextFormField(
                 controller: _passwordController,
-                decoration: InputDecoration(labelText: 'Password'),
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.lock),
+                ),
                 obscureText: true,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -101,6 +121,10 @@ class _LoginPageState extends State<LoginPage> {
               ElevatedButton(
                 onPressed: _login,
                 child: Text('Login'),
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                  textStyle: TextStyle(fontSize: 16),
+                ),
               ),
               SizedBox(height: 10),
               TextButton(
@@ -108,6 +132,9 @@ class _LoginPageState extends State<LoginPage> {
                   Navigator.pushNamed(context, '/register');
                 },
                 child: Text('Don\'t have an account? Register'),
+                style: TextButton.styleFrom(
+                  textStyle: TextStyle(fontSize: 16),
+                ),
               ),
             ],
           ),

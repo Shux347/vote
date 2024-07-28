@@ -1,3 +1,5 @@
+// ignore_for_file: unnecessary_brace_in_string_interps, use_build_context_synchronously, prefer_const_constructors, use_key_in_widget_constructors, prefer_const_constructors_in_immutables, library_private_types_in_public_api
+
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import '../helpers/database.dart';
@@ -107,36 +109,53 @@ class _VotingPageState extends State<VotingPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Vote in Election'),
+        centerTitle: true,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text('Select a candidate:', style: TextStyle(fontSize: 18)),
+            Text(
+              'Select a candidate:',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 10),
             Flexible(
               child: ListView.builder(
                 shrinkWrap: true,
                 itemCount: _candidates.length,
                 itemBuilder: (context, index) {
                   final candidate = _candidates[index];
-                  return RadioListTile<int>(
-                    title: Text(candidate['name']),
-                    value: candidate['id'],
-                    groupValue: _selectedCandidateId,
-                    onChanged: (int? value) {
-                      setState(() {
-                        _selectedCandidateId = value;
-                      });
-                    },
+                  return Card(
+                    margin: EdgeInsets.symmetric(vertical: 8),
+                    child: RadioListTile<int>(
+                      title: Text(candidate['name']),
+                      value: candidate['id'],
+                      groupValue: _selectedCandidateId,
+                      onChanged: (int? value) {
+                        setState(() {
+                          _selectedCandidateId = value;
+                        });
+                      },
+                    ),
                   );
                 },
               ),
             ),
             SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _submitVote,
-              child: Text('Submit Vote'),
+            Center(
+              child: ElevatedButton(
+                onPressed: _submitVote,
+                child: Text('Submit Vote'),
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                  textStyle: TextStyle(fontSize: 16),
+                ),
+              ),
             ),
           ],
         ),

@@ -1,7 +1,6 @@
-// ignore_for_file: prefer_const_constructors
+// ignore_for_file: unnecessary_brace_in_string_interps, use_build_context_synchronously, library_private_types_in_public_api, use_key_in_widget_constructors, prefer_const_constructors
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../helpers/database.dart';
 import 'dashboard_page.dart';
 
@@ -60,12 +59,10 @@ class _CreateElectionPageState extends State<CreateElectionPage> {
   Future<void> _createElection() async {
     if (_formKey.currentState!.validate()) {
       final name = _nameController.text;
-      final creatorName = widget.name;
-      final timestamp = DateFormat('dd-MM-yy HH:mm').format(DateTime.now());
-      final formattedName = '$name, created by $creatorName at $timestamp';
-      
       final candidates = _candidateControllers.map((c) => c.text).toList();
       final voters = _voterControllers.map((c) => c.text).toList();
+      final timestamp = DateTime.now().toString();
+      final fullName = '$name, created by ${widget.name} at $timestamp';
 
       try {
         final connection = await Database().getConnection();
@@ -96,7 +93,7 @@ class _CreateElectionPageState extends State<CreateElectionPage> {
         final electionResult = await connection.query(
           'INSERT INTO elections (name, creator_email) VALUES (@name, @creator_email) RETURNING id',
           substitutionValues: {
-            'name': formattedName,
+            'name': fullName,
             'creator_email': widget.email,
           },
         );
@@ -154,91 +151,135 @@ class _CreateElectionPageState extends State<CreateElectionPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Create Election'),
+        centerTitle: true,
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              children: <Widget>[
-                TextFormField(
-                  controller: _nameController,
-                  decoration: InputDecoration(labelText: 'Name of Election'),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter the name of the election';
-                    }
-                    return null;
-                  },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Text(
+                'Create a New Election',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
                 ),
-                SizedBox(height: 10),
-                Text('Candidates of Election'),
-                ..._candidateControllers.asMap().entries.map((entry) {
-                  int index = entry.key;
-                  TextEditingController controller = entry.value;
-                  return Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: controller,
-                          decoration: InputDecoration(labelText: 'Candidate'),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter the candidate\'s name';
-                            }
-                            return null;
-                          },
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 20),
+              TextFormField(
+                controller: _nameController,
+                decoration: InputDecoration(
+                  labelText: 'Name of Election',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter the name of the election';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 20),
+              Text(
+                'Candidates of Election',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: 10),
+              ..._candidateControllers.asMap().entries.map((entry) {
+                int index = entry.key;
+                TextEditingController controller = entry.value;
+                return Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: controller,
+                        decoration: InputDecoration(
+                          labelText: 'Candidate',
+                          border: OutlineInputBorder(),
                         ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter the candidate\'s name';
+                          }
+                          return null;
+                        },
                       ),
-                      IconButton(
-                        icon: Icon(Icons.remove_circle),
-                        onPressed: () => _removeCandidateField(index),
-                      ),
-                    ],
-                  );
-                }).toList(),
-                TextButton(
-                  onPressed: _addCandidateField,
-                  child: Text('Add Candidate'),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.remove_circle),
+                      onPressed: () => _removeCandidateField(index),
+                    ),
+                  ],
+                );
+              }).toList(),
+              TextButton(
+                onPressed: _addCandidateField,
+                child: Text('Add Candidate'),
+                style: TextButton.styleFrom(
+                  textStyle: TextStyle(fontSize: 16),
                 ),
-                SizedBox(height: 10),
-                Text('Voters (Emails)'),
-                ..._voterControllers.asMap().entries.map((entry) {
-                  int index = entry.key;
-                  TextEditingController controller = entry.value;
-                  return Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: controller,
-                          decoration: InputDecoration(labelText: 'Voter Email'),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter the voter\'s email';
-                            }
-                            return null;
-                          },
+              ),
+              SizedBox(height: 20),
+              Text(
+                'Voters (Emails)',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: 10),
+              ..._voterControllers.asMap().entries.map((entry) {
+                int index = entry.key;
+                TextEditingController controller = entry.value;
+                return Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: controller,
+                        decoration: InputDecoration(
+                          labelText: 'Voter Email',
+                          border: OutlineInputBorder(),
                         ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter the voter\'s email';
+                          }
+                          return null;
+                        },
                       ),
-                      IconButton(
-                        icon: Icon(Icons.remove_circle),
-                        onPressed: () => _removeVoterField(index),
-                      ),
-                    ],
-                  );
-                }).toList(),
-                TextButton(
-                  onPressed: _addVoterField,
-                  child: Text('Add Voter'),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.remove_circle),
+                      onPressed: () => _removeVoterField(index),
+                    ),
+                  ],
+                );
+              }).toList(),
+              TextButton(
+                onPressed: _addVoterField,
+                child: Text('Add Voter'),
+                style: TextButton.styleFrom(
+                  textStyle: TextStyle(fontSize: 16),
                 ),
-                SizedBox(height: 20),
-                ElevatedButton(
+              ),
+              SizedBox(height: 20),
+              Center(
+                child: ElevatedButton(
                   onPressed: _createElection,
                   child: Text('Create Election'),
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                    textStyle: TextStyle(fontSize: 16),
+                  ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

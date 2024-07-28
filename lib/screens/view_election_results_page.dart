@@ -106,6 +106,7 @@ class _ViewElectionResultsPageState extends State<ViewElectionResultsPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Results for ${widget.electionName}'),
+        centerTitle: true,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -114,9 +115,19 @@ class _ViewElectionResultsPageState extends State<ViewElectionResultsPage> {
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text('Results:', style: TextStyle(fontSize: 18)),
+                  Text(
+                    'Results:',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   SizedBox(height: 10),
-                  Text('Total Voters: $_totalVoters', style: TextStyle(fontSize: 16)),
+                  Text(
+                    'Total Voters: $_totalVoters',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  SizedBox(height: 20),
                   Expanded(
                     child: charts.BarChart(
                       _createChartData(),
@@ -126,9 +137,15 @@ class _ViewElectionResultsPageState extends State<ViewElectionResultsPage> {
                     ),
                   ),
                   SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: _closeElection,
-                    child: Text('Close Election'),
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: _closeElection,
+                      child: Text('Close Election'),
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                        textStyle: TextStyle(fontSize: 16),
+                      ),
+                    ),
                   ),
                 ],
               ),
