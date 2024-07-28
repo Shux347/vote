@@ -23,8 +23,6 @@ dependencies:
   build_runner: ^2.1.7
   intl: ^0.17.0
 
-
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -34,3 +32,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/.env
+    - assets/images/ # Include this line to add the images directory

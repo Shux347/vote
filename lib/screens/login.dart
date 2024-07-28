@@ -24,10 +24,6 @@ class _LoginPageState extends State<LoginPage> {
         final connection = await Database().getConnection();
         print('Database connection obtained.');
 
-        if (connection.isClosed) {
-          throw Exception('Database connection is closed.');
-        }
-
         final result = await connection.query(
           'SELECT * FROM users WHERE email = @email AND password = @password',
           substitutionValues: {
@@ -40,7 +36,12 @@ class _LoginPageState extends State<LoginPage> {
           final user = result.first.toColumnMap();
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => DashboardPage(name: user['username'] ?? '', email: email)),
+            MaterialPageRoute(
+              builder: (context) => DashboardPage(
+                name: user['username'] ?? '',
+                email: email,
+              ),
+            ),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -68,6 +69,12 @@ class _LoginPageState extends State<LoginPage> {
           key: _formKey,
           child: Column(
             children: <Widget>[
+              // Add the image widget here
+              Image.asset(
+                'assets/images/logo.jpg',
+                height: 200,
+              ),
+              SizedBox(height: 20),
               TextFormField(
                 controller: _emailController,
                 decoration: InputDecoration(labelText: 'Email'),
