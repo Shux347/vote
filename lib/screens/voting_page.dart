@@ -113,10 +113,11 @@ class _VotingPageState extends State<VotingPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-                    Text('Select a candidate:', style: TextStyle(fontSize: 18)),
-        Expanded(
-          child: ListView.builder(
-                            itemCount: _candidates.length,
+            Text('Select a candidate:', style: TextStyle(fontSize: 18)),
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: _candidates.length,
                 itemBuilder: (context, index) {
                   final candidate = _candidates[index];
                   return RadioListTile<int>(
@@ -132,6 +133,7 @@ class _VotingPageState extends State<VotingPage> {
                 },
               ),
             ),
+            SizedBox(height: 20),
             ElevatedButton(
               onPressed: _submitVote,
               child: Text('Submit Vote'),
