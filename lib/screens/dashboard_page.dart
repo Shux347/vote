@@ -1,7 +1,8 @@
 // ignore_for_file: unnecessary_brace_in_string_interps, use_build_context_synchronously, library_private_types_in_public_api, use_key_in_widget_constructors, prefer_const_constructors_in_immutables, prefer_const_constructors
 
 import 'package:flutter/material.dart';
-import '../helpers/database.dart';
+import '../helpers/database_service.dart';
+import '../helpers/database.dart'; // Ensure this import is here
 import 'create_election_page.dart';
 import 'login.dart';
 import 'voting_page.dart';
@@ -9,7 +10,7 @@ import 'view_election_results_page.dart';
 
 class DashboardPage extends StatefulWidget {
   final String name;
-  final String email;  // Add email parameter
+  final String email;
 
   DashboardPage({required this.name, required this.email});
 
@@ -18,19 +19,22 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
+  late final DatabaseService _databaseService;
+
   List<Map<String, dynamic>> _assignedElections = [];
   List<Map<String, dynamic>> _yourElections = [];
 
   @override
   void initState() {
     super.initState();
+    _databaseService = DatabaseService(Database());
     _loadAssignedElections();
     _loadYourElections();
   }
 
   Future<void> _loadAssignedElections() async {
     try {
-      final connection = await Database().getConnection();
+      final connection = await _databaseService.getConnection();
       print('Fetching assigned elections for email: ${widget.email}');  // Debugging log
 
       final results = await connection.query(
@@ -65,7 +69,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Future<void> _loadYourElections() async {
     try {
-      final connection = await Database().getConnection();
+      final connection = await _databaseService.getConnection();
       print('Fetching your elections for email: ${widget.email}');  // Debugging log
 
       final results = await connection.query(
@@ -92,6 +96,22 @@ class _DashboardPageState extends State<DashboardPage> {
         SnackBar(content: Text('Error loading your elections: $e')),
       );
       print('Error loading your elections: $e');  // Debugging log
+    }
+  }
+
+  Future<void> _closeElection(int electionId) async {
+    try {
+      await _databaseService.deleteElection(electionId);
+      setState(() {
+        _yourElections.removeWhere((election) => election['id'] == electionId);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Election closed and removed successfully')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error closing election: $e')),
+      );
     }
   }
 
@@ -165,6 +185,10 @@ class _DashboardPageState extends State<DashboardPage> {
                   final election = _yourElections[index];
                   return ListTile(
                     title: Text(election['name']),
+                    trailing: IconButton(
+                      icon: Icon(Icons.close),
+                      onPressed: () => _closeElection(election['id']),
+                    ),
                     onTap: () {
                       Navigator.push(
                         context,

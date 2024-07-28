@@ -42,4 +42,43 @@ class DatabaseService {
     }
     return null;
   }
+
+  Future<void> createElection(String electionName, String creatorEmail) async {
+    final connection = await getConnection();
+    await connection.query(
+      'INSERT INTO elections (name, creator_email) VALUES (@name, @creator_email)',
+      substitutionValues: {'name': electionName, 'creator_email': creatorEmail},
+    );
+  }
+
+  Future<void> deleteElection(int electionId) async {
+    final connection = await getConnection();
+
+    // Start a transaction
+    await connection.transaction((ctx) async {
+      // Delete votes associated with the election
+      await ctx.query(
+        'DELETE FROM votes WHERE election_id = @election_id',
+        substitutionValues: {'election_id': electionId},
+      );
+
+      // Delete candidates associated with the election
+      await ctx.query(
+        'DELETE FROM candidates WHERE election_id = @election_id',
+        substitutionValues: {'election_id': electionId},
+      );
+
+      // Delete assigned elections entries associated with the election
+      await ctx.query(
+        'DELETE FROM assigned_elections WHERE election_id = @election_id',
+        substitutionValues: {'election_id': electionId},
+      );
+
+      // Delete the election
+      await ctx.query(
+        'DELETE FROM elections WHERE id = @id',
+        substitutionValues: {'id': electionId},
+      );
+    });
+  }
 }
