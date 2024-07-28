@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import '../helpers/database.dart';
 import '../helpers/fingerprint_auth_service.dart';
+import '../helpers/validator.dart';
 import 'login.dart';
 
 class RegistrationPage extends StatefulWidget {
@@ -15,47 +16,65 @@ class _RegistrationPageState extends State<RegistrationPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   late FingerprintAuthService _fingerprintAuthService;
+  late Validator _validator;
+  String? _emailValidationMessage;
 
   @override
   void initState() {
     super.initState();
     _fingerprintAuthService = FingerprintAuthService(LocalAuthentication());
+    _validator = Validator(Database());
   }
 
   Future<void> _register() async {
-    if (_formKey.currentState!.validate()) {
-      final username = _usernameController.text;
-      final email = _emailController.text;
-      final password = _passwordController.text;
+    // Perform initial form validation
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
-      bool authenticated = await _fingerprintAuthService.authenticate();
+    // Perform asynchronous email uniqueness check
+    final email = _emailController.text;
+    final emailUnique = await _validator.isEmailUnique(email);
 
-      if (!authenticated) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fingerprint authentication failed')),
-        );
-        return;
-      }
+    if (!emailUnique) {
+      setState(() {
+        _emailValidationMessage = 'Email is already in use';
+      });
+      _formKey.currentState!.validate(); // Revalidate the form
+      return;
+    }
 
-      try {
-        final connection = await Database().getConnection();
-        await connection.query(
-          'INSERT INTO users (email, username, password) VALUES (@email, @username, @password)',
-          substitutionValues: {
-            'email': email,
-            'username': username,
-            'password': password,
-          },
-        );
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => LoginPage()),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error registering user: $e')),
-        );
-      }
+    // Continue with registration if all validations pass
+    final username = _usernameController.text;
+    final password = _passwordController.text;
+
+    bool authenticated = await _fingerprintAuthService.authenticate();
+
+    if (!authenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Fingerprint authentication failed')),
+      );
+      return;
+    }
+
+    try {
+      final connection = await Database().getConnection();
+      await connection.query(
+        'INSERT INTO users (email, username, password) VALUES (@email, @username, @password)',
+        substitutionValues: {
+          'email': email,
+          'username': username,
+          'password': password,
+        },
+      );
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => LoginPage()),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error registering user: $e')),
+      );
     }
   }
 
@@ -83,10 +102,15 @@ class _RegistrationPageState extends State<RegistrationPage> {
               ),
               TextFormField(
                 controller: _emailController,
-                decoration: InputDecoration(labelText: 'Email'),
+                decoration: InputDecoration(
+                  labelText: 'Email',
+                  errorText: _emailValidationMessage,
+                ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter your email';
+                  } else if (!_validator.isValidEmailFormat(value)) {
+                    return 'Please enter a valid email address';
                   }
                   return null;
                 },
@@ -98,6 +122,8 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter your password';
+                  } else if (!_validator.isValidPassword(value)) {
+                    return 'Password must be at least 6 characters long';
                   }
                   return null;
                 },
