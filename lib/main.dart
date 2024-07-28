@@ -17,6 +17,39 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Secure Vote',
+      theme: ThemeData(
+        primaryColor: Colors.blue,
+        scaffoldBackgroundColor: Colors.white,
+        appBarTheme: AppBarTheme(
+          backgroundColor: Colors.blue,
+          titleTextStyle: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+          iconTheme: IconThemeData(color: Colors.white),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue,
+            foregroundColor: Colors.white,
+          ),
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.blue,
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          labelStyle: TextStyle(color: Colors.blue),
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.blue),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.blue),
+          ),
+        ),
+      ),
       initialRoute: '/',
       onGenerateRoute: (settings) {
         if (settings.name == '/') {

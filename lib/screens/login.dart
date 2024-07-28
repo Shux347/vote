@@ -60,10 +60,11 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: Text('Login'),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
@@ -71,7 +72,7 @@ class _LoginPageState extends State<LoginPage> {
             children: <Widget>[
               // Add the image widget here
               Image.asset(
-                'assets/images/logo.jpg',
+                'assets/images/logo.jpg', // Replace with your actual image path
                 height: 200,
               ),
               SizedBox(height: 20),
